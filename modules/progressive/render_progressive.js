@@ -3,6 +3,9 @@ fillToggle = 0;
 
 dynamicFillBudgetEnabled = true;
 
+POINT_SIZE = 1;
+PROGRESSIVE_BUDGET = 1 * 1000 * 1000;
+
 getRenderProgressiveState = function(target){
 
 
@@ -163,6 +166,8 @@ renderPointCloudProgressive = (function(){
 			gl.uniform1i(shReproject.uniforms.uGradient, 0);
 		}
 
+		gl.uniform1f(shReproject.uniforms.uPointSize, POINT_SIZE);
+
 		if(typeof ATTRIBUTE_MODE === "undefined"){
 			ATTRIBUTE_MODE = 1;
 		}
@@ -204,14 +209,16 @@ renderPointCloudProgressive = (function(){
 			gl.uniform1i(shFill.uniforms.uGradient, 0);
 		}
 
-		gl.uniform1i(shReproject.uniforms.uAttributeMode, ATTRIBUTE_MODE);
+		gl.uniform1i(shFill.uniforms.uAttributeMode, ATTRIBUTE_MODE);
+
+		gl.uniform1f(shFill.uniforms.uPointSize, POINT_SIZE);
 
 		gl.uniformMatrix4fv(shFill.uniforms.uWorldViewProj, 1, gl.FALSE, transform_m32);
 
 		let buffers = pointcloud.glBuffers;
 
-		//let remainingBudget = 3 * 1000 * 1000;
-		let remainingBudget = 1 * 1000 * 1000;
+		//let remainingBudget = 1 * 1000;
+		let remainingBudget = Math.min(PROGRESSIVE_BUDGET, pointcloud.numPoints);
 		//remainingBudget = 100 * 1000;
 		//let remainingBudget = 25836417;
 
@@ -609,7 +616,7 @@ renderPointCloudProgressive = (function(){
 		gl.useProgram(0);
 
 		// read debug values (#adaptive points) and write them to the state report
-		if(true){
+		if(false){
 			//gl.memoryBarrier(gl.ALL_BARRIER_BITS);
 
 			let resultBuffer = new ArrayBuffer(10 * 5 * 4);
@@ -644,10 +651,25 @@ renderPointCloudProgressive = (function(){
 			setDebugValue("progressive dyn budget", msg);
 		}
 
+		if(false){
+			// ssIndirectCommand
+
+			let resultBuffer = new ArrayBuffer(4);
+			gl.getNamedBufferSubData(state.ssIndirectCommand, 0, resultBuffer.byteLength, resultBuffer);
+			let view = new DataView(resultBuffer);
+
+			let count = view.getUint32(0, true);
+
+			setDebugValue("#reprojected", count);
+
+		}
+
 		GLTimerQueries.mark("render-progressive-end");
 		GLTimerQueries.measure("render.progressive", "render-progressive-start", "render-progressive-end");
 
 	}
+
+	
 
 })();
 
